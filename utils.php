@@ -53,14 +53,12 @@ function generateJobFilename($jobId, $originalName) {
 
 // Check staff authentication
 function isStaffAuthenticated() {
-    session_start();
     return isset($_SESSION['staff_auth']) && $_SESSION['staff_auth'] === true;
 }
 
 // Staff login
 function authenticateStaff($password) {
     if ($password === STAFF_PASSWORD) {
-        session_start();
         $_SESSION['staff_auth'] = true;
         return true;
     }
