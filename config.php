@@ -11,8 +11,8 @@ define('MAX_FILE_SIZE', 50 * 1024 * 1024); // 50MB
 define('ALLOWED_EXTENSIONS', ['stl', 'obj', '3mf']);
 
 // Email settings
-define('LAB_EMAIL', 'printlab@university.edu');
-define('LAB_NAME', '3D Print Lab');
+define('LAB_EMAIL', 'coad-fablab@lsu.edu');
+define('LAB_NAME', 'Fabrication Lab');
 
 // Pricing configuration
 define('FILAMENT_RATE', 0.10); // per gram
@@ -34,11 +34,11 @@ define('STAGES', [
 // Print methods and colors
 define('PRINT_METHODS', [
     'filament' => [
-        'name' => 'Filament (FDM)',
+        'name' => 'Filament',
         'colors' => ['Black', 'White', 'Red', 'Blue', 'Green', 'Yellow']
     ],
     'resin' => [
-        'name' => 'Resin (SLA)',
+        'name' => 'Resin',
         'colors' => ['Clear', 'Black', 'White', 'Gray']
     ]
 ]);

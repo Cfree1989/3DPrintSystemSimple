@@ -77,4 +77,19 @@ function ensureUploadDir() {
     }
 }
 
+// Get MIME type for file downloads
+function getMimeType($filepath) {
+    $ext = strtolower(pathinfo($filepath, PATHINFO_EXTENSION));
+    
+    $mimeTypes = [
+        'stl' => 'application/octet-stream',
+        'obj' => 'text/plain',
+        '3mf' => 'application/vnd.ms-package.3dmanufacturing-3dmodel+xml',
+        'ply' => 'application/octet-stream',
+        'dae' => 'model/vnd.collada+xml'
+    ];
+    
+    return $mimeTypes[$ext] ?? 'application/octet-stream';
+}
+
 ?> 

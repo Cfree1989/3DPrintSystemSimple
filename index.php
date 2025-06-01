@@ -42,6 +42,11 @@ if ($_POST) {
     }
 }
 
+// Handle file download requests
+if ($action === 'download_file') {
+    handleFileDownload();
+}
+
 // Handle file upload and job submission
 function handleSubmission() {
     global $db, $email;
@@ -218,6 +223,58 @@ function handleConfirmation() {
         $db->updateStatus($job['id'], 'cancelled');
         header("Location: ?action=cancelled&job_id=" . $job['id']);
     }
+    exit;
+}
+
+// Handle file download
+function handleFileDownload() {
+    if (!isStaffAuthenticated()) {
+        header("Location: ?action=staff&message=Authentication required");
+        exit;
+    }
+    
+    global $db;
+    
+    $jobId = (int)($_GET['job_id'] ?? 0);
+    if (!$jobId) {
+        header("Location: ?action=dashboard&message=Invalid job ID");
+        exit;
+    }
+    
+    $job = $db->getJob($jobId);
+    if (!$job) {
+        header("Location: ?action=dashboard&message=Job not found");
+        exit;
+    }
+    
+    // Generate the filename as stored on disk
+    $filename = generateJobFilename($jobId, $job['original_filename']);
+    $filepath = UPLOAD_DIR . $filename;
+    
+    if (!file_exists($filepath)) {
+        header("Location: ?action=dashboard&message=File not found on disk");
+        exit;
+    }
+    
+    // Serve the file
+    $originalFilename = $job['original_filename'];
+    $mimeType = getMimeType($filepath);
+    
+    header('Content-Description: File Transfer');
+    header('Content-Type: ' . $mimeType);
+    header('Content-Disposition: attachment; filename="' . basename($originalFilename) . '"');
+    header('Content-Transfer-Encoding: binary');
+    header('Expires: 0');
+    header('Cache-Control: must-revalidate');
+    header('Pragma: public');
+    header('Content-Length: ' . filesize($filepath));
+    
+    // Clear output buffer
+    ob_clean();
+    flush();
+    
+    // Read file and output
+    readfile($filepath);
     exit;
 }
 
@@ -631,23 +688,34 @@ function renderDashboard() {
                 <?php foreach ($jobsByStatus[$status] as $job): ?>
                     <div class="job-item">
                         <h4>Job #<?= $job['id'] ?> - <?= htmlspecialchars($job['student_name']) ?></h4>
-                        <p><strong>File:</strong> <?= htmlspecialchars($job['original_filename']) ?></p>
+                        <p><strong>File:</strong> <?= htmlspecialchars($job['original_filename']) ?>
+                            <a href="?action=download_file&job_id=<?= $job['id'] ?>" 
+                               class="btn" 
+                               style="font-size: 14px; padding: 8px 16px; margin-left: 12px; display: inline-flex; align-items: center; gap: 6px;"
+                               title="Download <?= htmlspecialchars($job['original_filename']) ?>">
+                                📁 Open File
+                            </a>
+                        </p>
                         <p><strong>Method:</strong> <?= htmlspecialchars($job['print_method']) ?> (<?= htmlspecialchars($job['color']) ?>)</p>
                         <p><strong>Email:</strong> <?= htmlspecialchars($job['student_email']) ?></p>
                         <p><strong>Submitted:</strong> <?= date('M j, Y g:i A', strtotime($job['created_at'])) ?></p>
                         
                         <?php if ($status === 'pending'): ?>
-                            <button class="btn" onclick="showApprovalModal(<?= $job['id'] ?>, '<?= $job['print_method'] ?>')">Approve</button>
-                            <button class="btn btn-danger" onclick="showRejectionModal(<?= $job['id'] ?>)">Reject</button>
+                            <div style="margin-top: 16px; display: flex; gap: 12px; flex-wrap: wrap;">
+                                <button class="btn" onclick="showApprovalModal(<?= $job['id'] ?>, '<?= $job['print_method'] ?>')">Approve</button>
+                                <button class="btn btn-danger" onclick="showRejectionModal(<?= $job['id'] ?>)">Reject</button>
+                            </div>
                         <?php else: ?>
                             <?php if ($job['cost']): ?>
                                 <p><strong>Cost:</strong> <?= formatCurrency($job['cost']) ?></p>
                             <?php endif; ?>
-                            <select onchange="updateJobStatus(<?= $job['id'] ?>, this.value)">
-                                <?php foreach (STAGES as $key => $label): ?>
-                                    <option value="<?= $key ?>" <?= $key === $status ? 'selected' : '' ?>><?= $label ?></option>
-                                <?php endforeach; ?>
-                            </select>
+                            <div style="margin-top: 16px;">
+                                <select onchange="updateJobStatus(<?= $job['id'] ?>, this.value)" style="margin-top: 0;">
+                                    <?php foreach (STAGES as $key => $label): ?>
+                                        <option value="<?= $key ?>" <?= $key === $status ? 'selected' : '' ?>><?= $label ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
                         <?php endif; ?>
                     </div>
                 <?php endforeach; ?>
